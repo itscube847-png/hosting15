@@ -1,0 +1,45 @@
+name: SSHX Persistent Terminal (2025 Update)
+
+on:
+  workflow_dispatch:  # Manual trigger
+  schedule:
+    - cron: '0 */5 * * *'  # Restart every 5 hours for ~95% uptime
+
+jobs:
+  terminal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350  # Under 6hr sweet spot
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Base Deps
+      run: |
+        sudo apt update
+        sudo apt install -y curl build-essential  # Rust-ready if you build stuff
+
+    - name: Download & Launch SSHX v0.4.1
+      run: |
+        # Latest stable binary (Feb 2025 release)
+             curl -sSf https://sshx.io/get | sh -s run x
+          chmod +x sshx
+        # Fire up a named session—grabs timestamp for uniqueness
+        ./sshx --session-name "vps-$(date +%s)" &
+        # Give it a sec to spin
+        sleep 15
+        # Log the access link (check job output)
+        SESSION_URL= 
+        echo "🔗 Jump in at: $SESSION_URL"
+        echo "SESSION_URL=$SESSION_URL" >> $GITHUB_ENV
+
+    - name: Session Keeper & Auto-Backup
+      run: |
+        # Loop to keep it humming + backup every 5 mins
+        while true; do
+          echo "Heartbeat: $(date)" >> heartbeat.log
+          # Backup workspace/files
+          TIMESTAMP=$(date +%s)
+          tar -czf "backup-$TIMESTAMP.tar.gz" . --exclude='*.git'  # Skip git noise
+          # Optional: Upload to GitHub Release for persistence
+          # gh release create "backup-$TIMESTAMP" --title "Auto-Save $TIMESTAMP" "backup-$TIMESTAMP.tar.gz"
+          sleep 300
+        done
