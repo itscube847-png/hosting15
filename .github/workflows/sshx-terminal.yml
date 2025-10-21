@@ -7,7 +7,7 @@ on:
 
 jobs:
   terminal:
-    runs-on: ubuntu-latest-32-core  # Boom—upgraded! (Confirm label in your settings)
+    runs-on: ubuntu-latest  # Boom—upgraded! (Confirm label in your settings)
     timeout-minutes: 350  # Still under 6hr cap
     steps:
     - uses: actions/checkout@v4
