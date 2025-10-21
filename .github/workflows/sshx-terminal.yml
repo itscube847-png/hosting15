@@ -1,45 +1,40 @@
-name: SSHX Persistent Terminal (2025 Update)
+name: SSHX Beast Mode (128GB RAM / 1.2TB Storage)
 
 on:
   workflow_dispatch:  # Manual trigger
   schedule:
-    - cron: '0 */5 * * *'  # Restart every 5 hours for ~95% uptime
+    - cron: '0 */5 * * *'  # Restart every 5 hours
 
 jobs:
   terminal:
-    runs-on: ubuntu-latest
-    timeout-minutes: 350  # Under 6hr sweet spot
+    runs-on: ubuntu-latest-32-core  # Boom—upgraded! (Confirm label in your settings)
+    timeout-minutes: 350  # Still under 6hr cap
     steps:
     - uses: actions/checkout@v4
 
     - name: Install Base Deps
       run: |
         sudo apt update
-        sudo apt install -y curl build-essential  # Rust-ready if you build stuff
+        sudo apt install -y curl build-essential  # Scale for big builds
 
     - name: Download & Launch SSHX v0.4.1
       run: |
-        # Latest stable binary (Feb 2025 release)
-             curl -sSf https://sshx.io/get | sh -s run x
-          chmod +x sshx
-        # Fire up a named session—grabs timestamp for uniqueness
-        ./sshx --session-name "vps-$(date +%s)" &
-        # Give it a sec to spin
+        curl -sSf https://sshx.io/get | sh -s run
+        chmod +x sshx
+        ./sshx --session-name "beast-vps-$(date +%s)" &
         sleep 15
-        # Log the access link (check job output)
-        SESSION_URL= 
-        echo "🔗 Jump in at: $SESSION_URL"
+        SESSION_URL=
+        echo "🔗 Mega terminal at: $SESSION_URL"
         echo "SESSION_URL=$SESSION_URL" >> $GITHUB_ENV
 
-    - name: Session Keeper & Auto-Backup
+    - name: Keeper & Beefy Backup
       run: |
-        # Loop to keep it humming + backup every 5 mins
         while true; do
           echo "Heartbeat: $(date)" >> heartbeat.log
-          # Backup workspace/files
+          # Backup more aggressively—1.2TB gives room
           TIMESTAMP=$(date +%s)
-          tar -czf "backup-$TIMESTAMP.tar.gz" . --exclude='*.git'  # Skip git noise
-          # Optional: Upload to GitHub Release for persistence
-          # gh release create "backup-$TIMESTAMP" --title "Auto-Save $TIMESTAMP" "backup-$TIMESTAMP.tar.gz"
+          tar -czf "backup-$TIMESTAMP.tar.gz" . --exclude='*.git' --exclude='__pycache__'
+          # Upload to release for persistence across runs
+          gh release create "backup-$TIMESTAMP" --title "Beast Save $TIMESTAMP" "backup-$TIMESTAMP.tar.gz" || true
           sleep 300
         done
